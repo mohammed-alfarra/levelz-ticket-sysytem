@@ -2,43 +2,37 @@
 
 namespace App\Providers;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 
 class MacroServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        HasMany::macro('syncRelation', function ($relation, $newValues): array {
-            $oldValues = $this->parent->{$relation}()
-                ->get()
-                ->keyBy('id');
+        $app = $this->app;
 
-            $results = [
-                'attached' => [],
-                'detached' => [],
-                'updated' => [],
-            ];
+        Builder::macro('dynamicPaginate', function () use ($app) {
+            /** @var Request $request */
+            $request = $app->get('request');
 
-            foreach ($newValues as $value) {
-                if ($value['id'] && $date = $oldValues->get($value['id'])) {
-                    $date->fill($value);
-                    $date->save();
-                    if ($date->getChanges()) {
-                        $results['updated'][] = $date;
-                    }
-
-                    $oldValues->forget($value['id']);
-                } else {
-                    $results['attached'][] = $this->parent->{$relation}()->create($value);
-                }
+            if ('none' === $request->get('pagination')) {
+                return $this->get();
             }
 
-            foreach ($oldValues as $deleted) {
-                $results['detached'][] = $deleted->delete();
-            }
+            $page = Paginator::resolveCurrentPage();
 
-            return $results;
+            $perPage = $request->get('per_page', 20);
+
+            $results = ($total = $this->toBase()->getCountForPagination())
+                ? $this->forPage($page, $perPage)->get(['*'])
+                : $this->model->newCollection();
+
+            return $this->paginator($results, $total, $perPage, $page, [
+                'path' => Paginator::resolveCurrentPath(),
+                'pageName' => 'page',
+            ]);
         });
     }
 }
