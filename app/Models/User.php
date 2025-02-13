@@ -6,6 +6,7 @@ use App\Scopes\OrderByCreatedAt;
 use App\Traits\Models\HasActivation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -88,5 +89,10 @@ class User extends Authenticatable implements JWTSubject
         $this->update([
             'device_token' => $device_token,
         ]);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 }
