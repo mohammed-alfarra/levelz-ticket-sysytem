@@ -1,0 +1,10 @@
+parameters:
+
+    paths:
+        - app
+        - tests
+
+    level: max
+
+    reportUnmatchedIgnoredErrors: false
+    checkMissingIterableValueType: false
